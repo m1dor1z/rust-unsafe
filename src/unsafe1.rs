@@ -79,4 +79,80 @@ fn testing_unsafe_arrays() {
 
         println!("{:?}", &data[..]);
     }
+
+    unsafe {
+        let mut data = [0; 10];
+        let slice1_all = &mut data[..];
+        let ptr2_all = slice1_all.as_mut_ptr();
+
+        let ptr3_at_0 = ptr2_all;
+        let ptr4_at_1 = ptr2_all.add(1);
+        let ref5_at_0 = &mut *ptr3_at_0;
+        let ref6_at_1 = &mut *ptr4_at_1;
+
+        *ref6_at_1 += 6;
+        *ref5_at_0 += 5;
+        *ptr4_at_1 += 4;
+        *ptr3_at_0 += 3;
+
+        for idx in 0..10 {
+            *ptr2_all.add(idx) += idx;
+        }
+
+        for (idx, elem_ref) in slice1_all.iter_mut().enumerate() {
+            *elem_ref += idx;
+        }
+
+        println!("{:?}", &data[..]);
+    }
 }
+
+#[test]
+fn test_interior_mutability() {
+    unsafe {
+        let mut data = std::cell::Cell::new(10);
+        let mref1 = &mut data;
+        let ptr2 = mref1 as *mut std::cell::Cell<i32>;
+        let sref3 = &*mref1;
+
+        sref3.set(sref3.get() + 3);
+        (*ptr2).set((*ptr2).get() + 2);
+        mref1.set(mref1.get() + 1);
+        println!("{:?}", data.get());
+    }
+}
+
+#[test]
+fn test_interior_mutability_001() {
+
+    let opaque_read = |val: &i32| {
+        println!("{}", val);
+    };
+
+    unsafe {
+        let mut data = std::cell::UnsafeCell::new(10);
+        let mref1 = &mut data;
+        let sref2 = &*mref1;
+        let ptr3 = sref2.get();             
+
+        *ptr3 += 3;
+        opaque_read(&*sref2.get());
+        *sref2.get() += 2;
+        *mref1.get() += 1;
+
+        println!("{}", *data.get());
+    }
+}
+
+#[test]
+fn test_box_unsafe() {
+    unsafe {
+        let mut data = Box::new(20);
+        let ptr1 = (&mut *data) as *mut i32;
+
+        *ptr1 += 1;
+        *data += 20;
+        println!("{}", data);
+    }
+}
+
